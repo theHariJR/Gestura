@@ -1,0 +1,8 @@
+streamlit
+streamlit-lottie
+streamlit-option-menu
+opencv-python
+ultralytics
+pyttsx3
+googletrans
+requests
