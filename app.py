@@ -14,7 +14,7 @@ import os
 
 # set the page config
 
-st.set_page_config(page_title='Gestura', page_icon=':sparkle:', layout='wide')
+st.set_page_config(page_title='Gestura', page_icon=':hand:', layout='wide')
 
 # url loader 
 
@@ -23,6 +23,11 @@ def url_loader(url):
     if r.status_code !=200:
         return None
     return r.json()
+
+# loading assests
+
+front = url_loader('https://lottie.host/394eb195-2a7f-4d5c-bbdf-94bece89bccc/1M1kQXv8jc.json')
+image = url_loader('https://lottie.host/d41d28f9-09f9-42c4-80ba-fd5d5a80e559/YOwqOelSQc.json')
 
 # Home page sidebar
 
@@ -35,7 +40,7 @@ with st.sidebar:
             st.empty()
 
     choose = option_menu(
-        "Gestura Testing",
+        "Gestura",
         ["Home", "Image", "Video"],
         menu_icon="rocket",
         default_index=0,
@@ -58,31 +63,50 @@ classNames = ['additional', 'alcohol', 'allergy', 'bacon', 'bag', 'barbecue', 'b
 # initializing
 
 translator = Translator()
-engine = pyttsx3.init()
+# engine = pyttsx3.init()
 
 # functions
 
 def gesture_image(img):
     image = Image.open(img)
     out = image.save('sample.png')
-    #st.image('sample.png')
     img_file = cv2.imread('sample.png')
-    print(img_file)
     results = model(img_file)[0]
     for result in results.boxes.data.tolist():
         x1, y1, x2, y2, score, class_id = result
         word = classNames[int(class_id)]
-        # translation = translator.translate(word, dest='ta')
-        # output = translation.text
-        # text_to_speech.say(word)
+        try:
+            # Initialize the engine only once
+            engine = pyttsx3.init()
+
+            # Check if the engine's run loop is not already running
+            if not engine._inLoop:
+                voices = engine.getProperty('voices')
+                engine.setProperty('voice', voices[1].id)
+                engine.say(word)
+                engine.runAndWait()
+            else:
+                print("Text-to-speech run loop is already in progress. Wait until it finishes.")
+        except Exception as e:
+            print(f"Error during text-to-speech conversion: {e}")
     return word
 
+
 def convert_text_to_speech(text):
-    engine = pyttsx3.init()
-    voices = engine.getProperty('voices')
-    engine.setProperty('voice', voices[1].id)
-    engine.say(text)
-    engine.runAndWait()
+    try:
+        # Initialize the engine only once
+        engine = pyttsx3.init()
+
+        # Check if the engine's run loop is not already running
+        if not engine._inLoop:
+            voices = engine.getProperty('voices')
+            engine.setProperty('voice', voices[1].id)
+            engine.say(text)
+            engine.runAndWait()
+        else:
+            print("Text-to-speech run loop is already in progress. Wait until it finishes.")
+    except Exception as e:
+        print(f"Error during text-to-speech conversion: {e}")
 
 # Page navigations
 
@@ -90,10 +114,26 @@ if choose == "Home":
 
     st.markdown("<h1 style='text-align: center;'>Welcome to Gestura</h1>", unsafe_allow_html=True)
 
+    st.write('----')
+
+    st.lottie(front, height=250, key='touch')
+
+    st.markdown("""
+                Gestura is an innovative project designed to enhance communication between individuals by leveraging the power of sign language. 
+                The primary goal of Gestura is to detect sign language gestures and convert them into the user's native language, facilitating better 
+                understanding and communication for diverse communities.
+                By providing a bridge between sign language and spoken/written languages, Gestura empowers individuals to express themselves more freely and 
+                participate in a broader range of conversations.
+    """, unsafe_allow_html=True)
+
+    #st.lottie(front, height=400, key='touch')
+
 
 elif choose == "Image":
 
     st.title('For Images')
+
+    st.lottie(image, height=200, key='image')
 
     upload_file = st.file_uploader("Upload an image", type=['jpg', 'png', 'jpeg', 'tiff'])
 
@@ -102,29 +142,48 @@ elif choose == "Image":
         st.image(upload_file)
 
         st.write(gesture_image(upload_file))
-
-        #convert_text_to_speech(out)
         
-
-
         os.remove('sample.png')
 
 elif choose == 'Video':
 
-    st.title("Text to speech convertor")
+    st.title("Gestura video phase")
 
+    if st.button(label='Start to capture') is not None:
 
-    user_input = st.text_input('Enter the text')
+        cap = cv2.VideoCapture(0)
 
-    if st.button('Convert to speech') and user_input is not None:
+        while True:
 
-        text = user_input
+            ret, frame = cap.read()
 
-        # voices = text_to_speech.getProperty('voices')
-        # text_to_speech.setProperty('voice', voices[1].id)
+            results = model(frame, show=True)[0]
 
-        engine.say(text)
-        engine.runAndWait()
+            for result in results.boxes.data.tolist():
+                x1, y1, x2, y2, score, class_id = result
+                word = classNames[int(class_id)]
+            
+                try:
+                    # Initialize the engine only once
+                    engine = pyttsx3.init()
+
+                    # Check if the engine's run loop is not already running
+                    if not engine._inLoop:
+                        voices = engine.getProperty('voices')
+                        engine.setProperty('voice', voices[1].id)
+                        engine.say(word)
+                        engine.runAndWait()
+                    else:
+                        print("Text-to-speech run loop is already in progress. Wait until it finishes.")
+                except Exception as e:
+                    print(f"Error during text-to-speech conversion: {e}")
+
+            #cv2.imshow('sample', frame)
+
+            if cv2.waitKey(1) == ord('q'):
+                break
+        cap.release()
+        cv2.destroyAllWindows()
         
     
 
