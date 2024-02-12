@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import requests
 import os
+import gtts as gt 
+import pygame
+from io import BytesIO
 
 # set the page config
 
@@ -63,11 +66,38 @@ classNames = ['additional', 'alcohol', 'allergy', 'bacon', 'bag', 'barbecue', 'b
 # initializing
 
 translator = Translator()
-# engine = pyttsx3.init()
+
 
 # functions
 
-def gesture_image(img):
+# def gesture_image(img):
+#     image = Image.open(img)
+#     out = image.save('sample.png')
+#     img_file = cv2.imread('sample.png')
+#     results = model(img_file)[0]
+#     for result in results.boxes.data.tolist():
+#         x1, y1, x2, y2, score, class_id = result
+#         word = classNames[int(class_id)]
+#         translation = translator.translate(word, dest='es')
+#         print(translation.text)
+#         output = translation.text
+#         try:
+#             # Initialize the engine only once
+#             engine = pyttsx3.init()
+
+#             # Check if the engine's run loop is not already running
+#             if not engine._inLoop:
+#                 voices = engine.getProperty('voices')
+#                 engine.setProperty('voice', voices[0].id)
+#                 engine.say(word)
+#                 engine.runAndWait()
+#             else:
+#                 print("Text-to-speech run loop is already in progress. Wait until it finishes.")
+#         except Exception as e:
+#             print(f"Error during text-to-speech conversion: {e}")
+#     return word
+
+def new_gestura(img, language):
     image = Image.open(img)
     out = image.save('sample.png')
     img_file = cv2.imread('sample.png')
@@ -75,38 +105,25 @@ def gesture_image(img):
     for result in results.boxes.data.tolist():
         x1, y1, x2, y2, score, class_id = result
         word = classNames[int(class_id)]
+        translation = translator.translate(word, dest = language)
+        print(translation.text)
+        output = translation.text
         try:
-            # Initialize the engine only once
-            engine = pyttsx3.init()
+            tts = gt.gTTS(text=output, lang=language)
+            audio_bytes = BytesIO()
+            tts.write_to_fp(audio_bytes)
+            audio_bytes.seek(0)
 
-            # Check if the engine's run loop is not already running
-            if not engine._inLoop:
-                voices = engine.getProperty('voices')
-                engine.setProperty('voice', voices[1].id)
-                engine.say(word)
-                engine.runAndWait()
-            else:
-                print("Text-to-speech run loop is already in progress. Wait until it finishes.")
+            # Initialize pygame mixer
+            pygame.mixer.init()
+            pygame.mixer.music.load(audio_bytes)
+            pygame.mixer.music.play()
+
         except Exception as e:
             print(f"Error during text-to-speech conversion: {e}")
     return word
 
 
-def convert_text_to_speech(text):
-    try:
-        # Initialize the engine only once
-        engine = pyttsx3.init()
-
-        # Check if the engine's run loop is not already running
-        if not engine._inLoop:
-            voices = engine.getProperty('voices')
-            engine.setProperty('voice', voices[1].id)
-            engine.say(text)
-            engine.runAndWait()
-        else:
-            print("Text-to-speech run loop is already in progress. Wait until it finishes.")
-    except Exception as e:
-        print(f"Error during text-to-speech conversion: {e}")
 
 # Page navigations
 
@@ -137,17 +154,21 @@ elif choose == "Image":
 
     upload_file = st.file_uploader("Upload an image", type=['jpg', 'png', 'jpeg', 'tiff'])
 
+    audio = st.selectbox(label="Enter the Audio", options=['ta', 'en', 'hi', 'te'])
+
     if st.button('Convert') and upload_file is not None:
 
         st.image(upload_file)
 
-        st.write(gesture_image(upload_file))
+        st.write(new_gestura(upload_file, audio))
         
         os.remove('sample.png')
 
 elif choose == 'Video':
 
     st.title("Gestura video phase")
+
+    audio = st.selectbox(label="Enter the Audio", options=['ta', 'en', 'hi', 'te'])
 
     if st.button(label='Start to capture') is not None:
 
@@ -162,19 +183,20 @@ elif choose == 'Video':
             for result in results.boxes.data.tolist():
                 x1, y1, x2, y2, score, class_id = result
                 word = classNames[int(class_id)]
+                translation = translator.translate(word, dest = 'ta')
+                print(translation.text)
+                output = translation.text
             
                 try:
-                    # Initialize the engine only once
-                    engine = pyttsx3.init()
+                    tts = gt.gTTS(text=output, lang='ta')
+                    audio_bytes = BytesIO()
+                    tts.write_to_fp(audio_bytes)
+                    audio_bytes.seek(0)
 
-                    # Check if the engine's run loop is not already running
-                    if not engine._inLoop:
-                        voices = engine.getProperty('voices')
-                        engine.setProperty('voice', voices[1].id)
-                        engine.say(word)
-                        engine.runAndWait()
-                    else:
-                        print("Text-to-speech run loop is already in progress. Wait until it finishes.")
+                    # Initialize pygame mixer
+                    pygame.mixer.init()
+                    pygame.mixer.music.load(audio_bytes)
+                    pygame.mixer.music.play()
                 except Exception as e:
                     print(f"Error during text-to-speech conversion: {e}")
 
