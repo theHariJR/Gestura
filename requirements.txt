@@ -6,3 +6,6 @@ ultralytics
 pyttsx3
 googletrans
 requests
+gTTS
+pygame
+io
